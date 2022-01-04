@@ -3,20 +3,26 @@ session_start();
 
 $pageTitle = "Members";
 
-if (isset($_SESSION['username'])) {
-
+if (isset($_SESSION['username'])) {     /* index.php هذا الجرء الخاص ب تسجيل السيشن ان كانت موجودة كمل غيل كة حولني علي  */
+    
     include "init.php";
 
+                        // خاصة ب الريكوست الي عن طريقة هحدد هروح انهي صفحة if
     $do = isset($_GET['do']) ? $do = $_GET['do'] : $do = 'Manage';
 
-#===============Manage===============#
+/* وهيا الصفحة إلي بيتعرض فيها كل اليوزر Manage من هنا بداية الشغل واول صفحة وهيا */
 
-    if ($do == 'Manage') { // Manage Member Page 
+    if ($do == 'Manage') { // Manage Member Page
     
-        $stmt = $con->prepare(" SELECT * FROM `users` ");
+        $page = "";
+        if (isset($_GET["page"]) && $_GET["page"] == "Panding") {
+            $page = "AND reg_status = 0 ";
+        }
+
+                            // الجزء الخاص ب استدعاء جميع اليوزر 
+        $stmt = $con->prepare(" SELECT * FROM `users` WHERE `groub_id` != 1 $page");
         $stmt->execute();
         $rows = $stmt->fetchAll();
-    
     ?>
 
         <h1 class="text-center">Manage Member</h1>
@@ -31,28 +37,31 @@ if (isset($_SESSION['username'])) {
                         <td>Registerd Date</td>
                         <td>Control</td>
                     </tr>
-                    <?php foreach ($rows as $row):
-                    echo "<tr>
+    <?php   foreach ($rows as $row): /* هنا الجزء الخاص ب عرض الداتا عن طريق اللوب */
+                echo "<tr>
                         <td>$row[user_id]</td>
                         <td>$row[user_name]</td>
                         <td>$row[email]</td>
                         <td>$row[full_name]</td>
-                        <td></td>
+                        <td>$row[Date]</td>
                         <td>
                             <a href='members.php?do=Edit&id=$row[user_id]' class='btn btn-success'>Edit <i class='fa fa-edit'></i></a>
-                            <a href='members.php?do=Delete&id=$row[user_id]' class='btn btn-danger confirm'>Delete <i class='fas fa-times'></i></a>
-                        </td>
+                            <a href='members.php?do=Delete&id=$row[user_id]' class='btn btn-danger confirm'>Delete <i class='fas fa-times'></i></a>";
+                            if ($row["reg_status"] == 0) {
+                            echo "<a href='members.php?do=Activate&id=$row[user_id]' class='btn btn-info'>Activate <i class='fas fa-check-circle'></i></a>";
+                            }
+                        echo "</td>
                     </tr>";
-                    endforeach ?>
+            endforeach ?>
                 </table>
             </div>
             <a href="members.php?do=Add" class="btn btn-primary">Add Page <i class="fa fa-plus"></i></a>
         </div>
 <?php
 
-#===============Add===============#
+/*  HTML Add هنا بقي الجزء الخاص بصفحة اضافة اعضاء جدد كود  */
 
-    } elseif ($do == 'Add') { // Add Page ?>
+    } elseif ($do == 'Add') { ?>
 
         <h1 class="text-center">Add Member</h1>
         <div class="container">
@@ -97,74 +106,75 @@ if (isset($_SESSION['username'])) {
                 </div><!-- End submit field -->
             </form>
         </div>
-<?php 
+<?php
+/* php Insert هنا بقي الجزء الخاص بصفحة اضافة اعضاء جدد */
 
-#===============Insert===============#
+    } elseif ($do == 'Insert') {
 
-    } elseif ($do == 'Insert') {    // Insert Member Page
+        echo "<h1 class='text-center'>Insert Member</h1>";
+        echo "<div class='container'>";
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-            echo "<h1 class='text-center'>Insert Member</h1>";
-            echo "<div class='container'>";
 
             $username   = $_POST['username'];
             $password   = SHA1($_POST['password']);
             $Email      = $_POST['Email'];
             $Full       = $_POST['Full'];
 
-            // Validate The Form
+            // هنا اقوم با التحقق من ان كل الحقول ليست فارغة
 
             $formErrors = [];
             if (empty($_POST['username'])) {
                 $formErrors[] = "Username Cant Be <strong>Empty</strong>";
-            }
-            if (empty($_POST['Email'])) {
+            } elseif (empty($_POST['Email'])) {
                 $formErrors []= "Email Cant Be <strong>Empty</strong>";
-            }
-            if (empty($_POST['Full'])) {
-                $formErrors[] = "Full Name Cant Be <strong>Empty</strong>";
+            } elseif(empty($_POST['Full'])) {
+                $formErrors[] = "Full Name Cant Be <strong>Empty</strong>" ;
             }
 
             foreach ($formErrors as $Error) {
                 echo "<div class='alert alert-danger'>" . $Error ."</div>";
             }
 
-            // Check If There's No Error Proceed The Uptate Operation
-
+                    // هنا يتم التحقق من ان مستودع الايرور فاضي لو فاضب هيكمل لو في ايرور هيطلع الايرور
             if (empty($formErrors)) {
 
-                //  Insert The Database With Tith Info 
+                $check = checkItem("email","users",$Email);
+                
+                if ($check == 1) {
+                
+                    $theMsg = "<div class='alert alert-info text-center'>Sorry You Email Exist</div>";
+                    redirectHome($theMsg ,"members.php");
+                
+                } else {
+                                //  استكمال ادخال البيانات
+                    $stmt = $con->prepare("INSERT INTO `users` (`user_name`, `password`, `email`, `full_name`, `reg_status` ,`Date`) 
+                                                        VALUES (:username, :password, :Email, :Full, 1, now())");
+                    
+                    $stmt->execute([
+                        'username'  => $username,
+                        'password'  => $password,
+                        'Email'     => $Email,
+                        'Full'      => $Full
+                    ]);
 
-                $stmt = $con->prepare("INSERT INTO `users`(`user_name`,`password`,`email`,`full_name`) VALUES (:username,:password,:Email,:Full)");
-                $stmt->execute([
-                    'username'  => $username,
-                    'password'  => $password,
-                    'Email'     => $Email,
-                    'Full'      => $Full
-                ]);
+                                // Add طباعة رسالة نجاح وتحويل علي صفحة
+                    $theMsg = "<div class='alert alert-success text-center'>" . $stmt->rowCount() . " ' Record Insert</div>";
+                    redirectHome($theMsg ,"members.php");
 
-                // Echo Success Message 
-
-                echo "<div class='alert alert-success'>" . $stmt->rowCount() . " ' Record Insert</div>";
-                header("refresh:2;url=members.php?do=Add");
-
-            }else {
+                }
+            }
             
-            echo "<div class='alert alert-success'>Sorry You Cant Browse This Page</div>";
-            
-            }   
         } else {
-            
-            $errorMsg = "Sorry You Cant Browse This Page Directly";
-            redirectHome($errorMsg,5);
-        
+                $theMsg = "<div class='alert alert-danger text-center'>Sorry You Cant Browse This Page Directly</div>";
+                redirectHome($theMsg , $_SERVER["HTTP_REFERER"]);
         }
-        echo "</div>";
-        
-#===============Edit===============#
+    echo '</div>';
 
-    } elseif ($do == 'Edit') {  // Edit Member Page 
+/* HTML Edit هنا بقي الجزء الخاص بصفحة تعديل الاعضاء */
+
+    } elseif ($do == "Edit") {
 
         if (isset($_GET["id"]) && is_numeric($_GET["id"])) {
 
@@ -222,88 +232,131 @@ if (isset($_SESSION['username'])) {
                     <!-- End submit field -->
                 </form>
             </div>
-<?php   }
+<?php   } else {
+            echo "<div class='container'>";
+                $theMsg = "<div class='alert alert-danger text-center'>Theres No Such ID</div>";
+                redirectHome($theMsg);
+            echo "</div>";
+        }
 
-#===============Update===============#
+/* php Update هنا بقي الجزء الخاص بصفحة تعديل الاعضاء */
 
-    } elseif ($do == 'Update') {    // Update Member Page
+    } elseif ($do == "Update") {    
+
+        echo "<h1 class='text-center'>Update Member</h1>";
+        echo "<div class='container'>";
 
         if ($_SERVER["REQUEST_METHOD"] == 'POST') {
             
-            echo "<h1 class='text-center'>Update Member</h1>";
-            echo "<div class='container'>";
-
-            $userid     = $_POST['userid'];
+            $userid     = $_POST["userid"];
             $username   = $_POST["username"];
-            $Email      = $_POST['Email'];
+            $Email      = $_POST["Email"];
             $Full       = $_POST["Full"];
             $pas = "";
 
-            $pas = (empty($_POST['password'])) ? $_POST["oldpassword"] : sha1($_POST['password']) ;
+            $pas = (empty($_POST["password"])) ? $_POST["oldpassword"] : sha1($_POST["password"]) ;
 
-            // if (empty($_POST['password'])) { $pas = $_POST['oldpassword']; } else { $pas = sha1($_POST['password']); }
+            // if (empty($_POST["password"])) { $pas = $_POST["oldpassword"]; } else { $pas = sha1($_POST["password"]); }
 
             $formErrors = [];
-            if (empty($_POST['username'])) {
+            if (empty($_POST["username"])) {
                 $formErrors[] = "Username Cant Be <strong>Empty</strong>";
             }
-            if (empty($_POST['Email'])) {
+            if (empty($_POST["Email"])) {
                 $formErrors []= "Email Cant Be <strong>Empty</strong>";
             }
-            if (empty($_POST['Full'])) {
+            if (empty($_POST["Full"])) {
                 $formErrors[] = "Full Name Cant Be <strong>Empty</strong>";
             }
             foreach ($formErrors as $Error) {
                 echo "<div class='alert alert-danger'>" . $Error ."</div>";
             }
 
-            // Check If There's No Error Proceed The Uptate Operation
-
+                    // هنا يتم التحقق من ان مستودع الايرور فاضي لو فاضب هيكمل لو في ايرور هيطلع الايرور
             if (empty($formErrors)) {
 
-                //  Uptate The Database With Tith Info 
-
-                $stmt = $con->prepare("UPDATE `users` SET `user_name`= ? , `password` = ?, email = ? , full_name = ? WHERE `user_id` = ?");
+                                //  هنا اقوم بتحديث البيانات 
+                $stmt = $con->prepare("UPDATE `users` SET `user_name`= ? , `password` = ?, `email` = ? , `full_name` = ? , `Date` = now() WHERE `user_id` = ?");
                 $stmt->execute([$username,$pas,$Email,$Full,$userid]);
 
-                // Echo Success Message 
+                                // Update طباعة رسالة نجاح وتحويل علي صفحة
+                $theMsg = "<div class='alert alert-success text-center'>" . $stmt->rowCount() . " ' Record Update</div>";
+                redirectHome($theMsg , $_SERVER['HTTP_REFERER']);
+            }
 
-                echo "<div class='alert alert-success'>" . $stmt->rowCount() . " ' Record Update</div>";
-                header("refresh:2;url=members.php?do=Edit&id=$_SESSION[ID]");
-
-            } else {
+        } else {
             
-            echo "<div class='alert alert-success'>Sorry You Cant Browse This Page</div>";
+                $theMsg = "<div class='alert alert-danger text-center'>Sorry You Cant Browse This Page Directly</div>";
+                redirectHome($theMsg);
             
             }
-        } echo "</div>";
+    echo "</div>";
 
-#===============Delete===============#
+/* Delete هنا بقي الجزء الخاص بصفحة حذف الاعضاء */
 
     } elseif ($do == "Delete") {
 
         echo "<h1 class='text-center'>Delete Member</h1>";
         echo"<div class='container'>";
-        if (isset($_GET["id"]) && is_numeric($_GET["id"])) {
 
+    /*                    // الجزء دة خاص ب استدعاء الرو إلي عاوز يتحذف
+        if ( isset($_GET["id"]) && is_numeric($_GET["id"])) {
             $stmt = $con->prepare(" SELECT * FROM `users` WHERE  `user_id` = ? LIMIT 1 ");
             $stmt->execute([intval($_GET["id"])]);
-            $row = $stmt->fetch();
             $count = $stmt->rowCount();
         }
+                                الجزء دة خاص ب استدعاء الرو إلي عاوز يتحذف
+        $stmt = $con->prepare(" SELECT * FROM `users` WHERE  `user_id` = ? LIMIT 1 ");
+        $stmt->execute([$id]);
+        $count = $stmt->rowCount();
+        $id = isset($_GET["id"]) && is_numeric($_GET["id"]) ? intval($_GET["id"]) : 0 ;
+    */
+        $id = isset($_GET["id"]) && is_numeric($_GET["id"]) ? intval($_GET["id"]) : 0 ;
 
+        $count = checkItem("user_id","users",$id);
+                                // التحقق ما إذا الرو موجود ولا لا لو موجود هينسحة
         if ($count > 0) {
 
             $stmt = $con->prepare(" DELETE FROM `users` WHERE  `user_id` = :ahmed ");
-            $stmt->bindParam(":ahmed",intval($_GET["id"]));
+            $stmt->bindParam(":ahmed",$id);
             $stmt->execute();
-            echo "<div class='alert alert-success'>Sorry You Cant Browse This Page</div>";
 
+                $theMsg = "<div class='alert alert-success text-center'>" . $stmt->rowCount() . " ' Record Insert</div>";
+                redirectHome($theMsg,"members.php");
+        } else {
+            $theMsg = "<div class='alert alert-danger text-center'>Sorry You Cant Browse This Page</div>";
+            redirectHome($theMsg);
         }
         echo "</div>";
+    } elseif ($do == "Activate" ) {
+
+        echo "<h1 class='text-center'>Activate Member</h1>";
+        echo"<div class='container'>";
+    
+        $id = isset($_GET["id"]) && is_numeric($_GET["id"]) ? intval($_GET["id"]) : 0 ;
+
+        $count = checkItem("user_id","users",$id);
+                                // التحقق ما إذا الرو موجود ولا لا لو موجود هينسحة
+        if ($count > 0) {
+
+            $stmt = $con->prepare(" UPDATE `users` SET `reg_status` = 1 WHERE`user_id` = ? ");
+            $stmt->execute([$id]);
+
+                $theMsg = "<div class='alert alert-success text-center'>" . $stmt->rowCount() . " ' Record Insert</div>";
+                redirectHome($theMsg,"members.php");
+
+        } else {
+            $theMsg = "<div class='alert alert-danger text-center'>Sorry You Cant Browse This Page</div>";
+            redirectHome($theMsg);
+        }
+        echo "</div>";
+
     }
 
     include $tbl . 'footer.php';
 } else {
+
     header('location:index.php');
+    exit();
+
 }

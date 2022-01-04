@@ -7,7 +7,7 @@ body {
 
     /*  End Main Rulez */
 a {
-    color: #630a00;
+    transition: .3s;
 }
     /* Start login form */
     
@@ -72,9 +72,72 @@ a {
 
     /* End Bootstrap Edits */
 
+    /* Start Dashboard */
+
+.home-stat .stat {
+    padding: 20px;
+    color: #FFF;
+    font-size: 15px;
+    border-radius: 10px;
+}
+
+.home-stat .stat span {
+    display: block;
+    font-size: 50px;
+}
+.home-stat .row a {
+    color: #FFF;
+    text-decoration: none;
+}
+.home-stat .st-Members{
+    background-color: #2980b9;
+    
+}
+
+.home-stat .st-Pending{
+    background-color: #e67e22;
+
+}
+.home-stat .st-Items{
+    background-color: #e74c3c;
+
+}
+.home-stat .st-Comments{
+    background-color: #34495e;
+
+}
+
+
+.latest {
+    margin-top: 20px;
+}
+
+.panel-body {padding: 8px;}
+
+.panel-body ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.panel-body ul li {
+    padding: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-body ul li a {
+    margin: 0;
+}
+
+    /* End Dashboard  */
+
     /* Start Members form */
 
-.text-center {
+h1 {
+    font-size: 55px;
+    margin: 40px 0;
     font-weight: bold;
     color: #666;
 }
@@ -89,8 +152,10 @@ a {
     color: #FFF;
 }
 
-*.btn {
+.btn {
     padding: 5px 10px ;
+    margin: 5px;
+    font-weight: bold;
 }
 
     /* End Members form */
